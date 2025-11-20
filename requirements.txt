@@ -1,0 +1,6 @@
+Flask
+pytrends
+google-generativeai
+requests
+python-dotenv
+gunicorn
