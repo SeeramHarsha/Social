@@ -35,6 +35,13 @@ def generate_post_content(topic, keywords):
     response = model.generate_content(prompt)
     return response.text.split('---')
 
+# Function to get image keyword from topic
+def get_image_keyword_from_topic(topic):
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    prompt = f"Extract the most visually relevant keywords from the following topic for an image search. Focus on the core subject. For example, from 'new google data center in vizag', extract 'google data center'. From 'latest advancements in AI technology', extract 'AI technology'. Topic: '{topic}'. Output only the keywords."
+    response = model.generate_content(prompt)
+    return response.text.strip()
+
 # Function to get an image from Unsplash
 def get_unsplash_image(query):
     access_key = os.getenv("UNSPLASH_ACCESS_KEY")
@@ -80,20 +87,21 @@ def generate():
     data = request.get_json()
     topic = data['topic']
 
-    # 1. Get trending keywords
-    keywords, trends_ok = get_trending_keywords(topic)
+    # 1. Get keyword from topic
+    image_keyword = get_image_keyword_from_topic(topic)
+    print(f"Using keyword for Trends & Unsplash: {image_keyword}")
 
-    # 2. Generate post content
+    # 2. Get trending keywords based on the extracted keyword
+    keywords, trends_ok = get_trending_keywords(image_keyword)
+
+    # 3. Generate post content
     post_suggestions_text = generate_post_content(topic, keywords)
 
     # 3. Get an image for each suggestion
     suggestions_with_images = []
     for i, post_text in enumerate(post_suggestions_text):
-        if keywords and i < len(keywords):
-            image_query = keywords[i]
-        else:
-            image_query = topic
-        image_url = get_unsplash_image(image_query)
+        # Use the same keyword for the image query
+        image_url = get_unsplash_image(image_keyword)
         suggestions_with_images.append({"post": post_text.strip(), "image_url": image_url})
 
     return jsonify({

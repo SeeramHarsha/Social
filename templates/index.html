@@ -93,9 +93,30 @@
             border-top: 1px solid #efefef;
             text-align: center;
         }
+   .loader {
+       border: 5px solid #f3f3f3;
+       border-radius: 50%;
+       border-top: 5px solid #3498db;
+       width: 50px;
+       height: 50px;
+       animation: spin 2s linear infinite;
+       position: absolute;
+       top: 50%;
+       left: 50%;
+       margin-top: -25px;
+       margin-left: -25px;
+       display: none; /* Hidden by default */
+       z-index: 1001; /* Above overlay */
+   }
+
+   @keyframes spin {
+       0% { transform: rotate(0deg); }
+       100% { transform: rotate(360deg); }
+   }
     </style>
 </head>
 <body>
+    <div id="loader" class="loader"></div>
     <div class="container">
         <h1>Social Media Post Generator</h1>
         <div class="form-group">
@@ -140,7 +161,8 @@
                 return;
             }
 
-
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block'; // Show loader
             resultDiv.innerHTML = 'Generating posts...';
             postsOverlayContainer.innerHTML = '';
             postsOverlay.style.display = "flex";
@@ -151,6 +173,7 @@
                 body: JSON.stringify({ topic })
             });
 
+            loader.style.display = 'none'; // Hide loader
             resultDiv.innerHTML = '';
             const data = await response.json();
             const suggestions = data.suggestions;
@@ -195,6 +218,8 @@
             }
 
             postsOverlay.style.display = "none";
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block'; // Show loader
             resultDiv.innerHTML = 'Posting...';
 
             const postResponse = await fetch('/post', {
@@ -202,6 +227,8 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...postData, platforms })
             });
+
+            loader.style.display = 'none'; // Hide loader
 
             const postResult = await postResponse.json();
             resultDiv.textContent = JSON.stringify(postResult, null, 2);
