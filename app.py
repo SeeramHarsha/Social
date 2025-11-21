@@ -1,6 +1,7 @@
 import os
 import requests
 import random
+import time
 from flask import Flask, render_template, request, jsonify
 from pytrends.request import TrendReq
 from pytrends.exceptions import TooManyRequestsError
@@ -17,16 +18,22 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 # Function to get trending keywords
 def get_trending_keywords(topic):
     pytrends = TrendReq(hl='en-US', tz=360)
-    pytrends.build_payload([topic], cat=0, timeframe='today 5-y', geo='', gprop='')
-    try:
-        related_queries = pytrends.related_queries()
-        trending_keywords = []
-        if related_queries[topic]['top'] is not None:
-            trending_keywords = related_queries[topic]['top']['query'].tolist()
-        return trending_keywords, True
-    except TooManyRequestsError:
-        print("Warning: Google Trends API rate limit reached. Proceeding without trending keywords.")
-        return [], False
+    retries = 3
+    delay = 1
+    for i in range(retries):
+        try:
+            pytrends.build_payload([topic], cat=0, timeframe='today 5-y', geo='', gprop='')
+            related_queries = pytrends.related_queries()
+            trending_keywords = []
+            if related_queries[topic]['top'] is not None:
+                trending_keywords = related_queries[topic]['top']['query'].tolist()
+            return trending_keywords, True
+        except TooManyRequestsError:
+            print(f"Google Trends API rate limit reached. Retrying in {delay} seconds...")
+            time.sleep(delay)
+            delay *= 2
+    print("Warning: Google Trends API rate limit reached after multiple retries. Proceeding without trending keywords.")
+    return [], False
 
 # Function to generate post content
 def generate_post_content(topic, keywords):
