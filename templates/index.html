@@ -144,6 +144,7 @@
             <h2>Select a Post</h2>
             <div id="apiWarning" class="api-warning"></div>
             <div id="postsOverlayContainer" class="posts-overlay-container"></div>
+            <div id="keywordsContainer"></div>
         </div>
     </div>
 
@@ -185,6 +186,9 @@
             } else {
                 apiWarning.style.display = 'none';
             }
+
+            const keywordsContainer = document.getElementById('keywordsContainer');
+            keywordsContainer.innerHTML = '<strong>Keywords:</strong> ' + data.keywords.join(', ');
 
             suggestions.forEach((suggestion) => {
                 const postDiv = document.createElement('div');

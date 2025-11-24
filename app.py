@@ -38,9 +38,17 @@ def get_trending_keywords(topic):
 # Function to generate post content
 def generate_post_content(topic, keywords):
     model = genai.GenerativeModel('gemini-2.5-flash')
-    prompt = f"Topic: '{topic}'. Keywords: {', '.join(keywords)}. Generate exactly three distinct social media posts, each under 280 characters. Separate each post with '---'. Output only the raw post text. No other text, headings, or explanations."
+    # First, generate better keywords
+    keyword_prompt = f"Generate a list of 5-10 highly relevant and engaging keywords for the topic: '{topic}'. Focus on broader concepts and avoid overly specific or local queries. For example, for 'Hyderabad', good keywords would be 'Hyderabad history', 'charminar', 'hyderabadi biryani', 'telangana tourism'. Return as a comma-separated list."
+    keyword_response = model.generate_content(keyword_prompt)
+    generated_keywords = [kw.strip() for kw in keyword_response.text.split(',')]
+    
+    # Then, generate the post with the new keywords
+    prompt = f"Topic: '{topic}'. Keywords: {', '.join(generated_keywords)}. Generate exactly three distinct social media posts, each under 280 characters. Separate each post with '---'. Output only the raw post text. No other text, headings, or explanations."
     response = model.generate_content(prompt)
-    return response.text.split('---')
+    
+    # Return both the posts and the keywords used
+    return response.text.split('---'), generated_keywords
 
 # Function to get image keyword from topic
 def get_image_keyword_from_topic(topic):
@@ -102,7 +110,9 @@ def generate():
     keywords, trends_ok = get_trending_keywords(image_keyword)
 
     # 3. Generate post content
-    post_suggestions_text = generate_post_content(topic, keywords)
+    post_suggestions_text, generated_keywords = generate_post_content(topic, keywords)
+    # The original 'keywords' from pytrends are now replaced by our generated ones for display
+    keywords = generated_keywords
 
     # 3. Get an image for each suggestion
     suggestions_with_images = []
@@ -113,7 +123,8 @@ def generate():
 
     return jsonify({
         "suggestions": suggestions_with_images,
-        "trends_ok": trends_ok
+        "trends_ok": trends_ok,
+        "keywords": keywords
     })
 
 @app.route('/post', methods=['POST'])
